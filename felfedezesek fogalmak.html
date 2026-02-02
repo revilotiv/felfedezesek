@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Történelmi Párosító Játék</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Fehér keretes tárolók */
+        .drop-zone {
+            border: 2px solid #6a329f;
+            background-color: white;
+            min-width: 150px;
+            min-height: 100px;
+            padding: 10px;
+            text-align: center;
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 4px;
+        }
+
+        .category-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            padding: 5px;
+            border-bottom: 1px dashed #ccc;
+            width: 100%;
+        }
+
+        /* Lila kártyák */
+        .draggable {
+            background-color: #6a329f;
+            color: white;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: grab;
+            font-size: 0.9rem;
+            user-select: none;
+            text-align: center;
+        }
+
+        .draggable:active {
+            cursor: grabbing;
+        }
+
+        /* Központi tároló */
+        #pool {
+            background-color: #e0e0e0;
+            border: 2px dashed #999;
+            padding: 20px;
+            width: 80%;
+            min-height: 80px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #result-message {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="row">
+        <div class="drop-zone" data-category="portugál kereskedő"><div class="category-title">portugál kereskedő</div></div>
+        <div class="drop-zone" data-category="királyi kincstárnok"><div class="category-title">királyi kincstárnok</div></div>
+        <div class="drop-zone" data-category="szerzetes"><div class="category-title">szerzetes</div></div>
+        <div class="drop-zone" data-category="térképész"><div class="category-title">térképész</div></div>
+    </div>
+
+    <div id="pool" ondrop="drop(event)" ondragover="allowDrop(event)">
+        </div>
+
+    <div class="row">
+        <div class="drop-zone" data-category="ültetvényes"><div class="category-title">ültetvényes</div></div>
+        <div class="drop-zone" data-category="bankár"><div class="category-title">bankár</div></div>
+        <div class="drop-zone" data-category="kézműves"><div class="category-title">kézműves</div></div>
+        <div class="drop-zone" data-category="tevehajcsár"><div class="category-title">tevehajcsár</div></div>
+        <div class="drop-zone" data-category="konkvisztádor"><div class="category-title">konkvisztádor</div></div>
+    </div>
+
+    <button onclick="checkAnswers()">Ellenőrzés</button>
+    <div id="result-message"></div>
+
+    <script>
+        // Adatok és a helyes megoldások definiálása
+        const data = [
+            { text: "Ázsia, fűszerek, hajó", target: "portugál kereskedő" },
+            { text: "bányák kimerülése", target: "királyi kincstárnok" },
+            { text: "nemesfém-hiány", target: "királyi kincstárnok" },
+            { text: "új kereskedelmi út alapítása", target: "királyi kincstárnok" },
+            { text: "misszió", target: "szerzetes" },
+            { text: "reneszánsz kíváncsiság", target: "térképész" },
+            { text: "navigáció", target: "térképész" },
+            { text: "kényszermunka", target: "ültetvényes" },
+            { text: "cukornád, dohány", target: "ültetvényes" },
+            { text: "részvényes", target: "bankár" },
+            { text: "manufaktúra", target: "kézműves" },
+            { text: "infláció", target: "kézműves" },
+            { text: "karaván", target: "tevehajcsár" },
+            { text: "gyarmatosítás", target: "konkvisztádor" }
+        ];
+
+        const pool = document.getElementById('pool');
+        const resultMsg = document.getElementById('result-message');
+
+        // Kártyák létrehozása és véletlenszerű elhelyezése a pool-ban
+        function init() {
+            const shuffled = data.sort(() => Math.random() - 0.5);
+            shuffled.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'draggable';
+                div.draggable = true;
+                div.id = 'card-' + index;
+                div.innerText = item.text;
+                div.setAttribute('data-answer', item.target);
+                div.ondragstart = drag;
+                pool.appendChild(div);
+            });
+
+            // Drop zónák felkészítése
+            document.querySelectorAll('.drop-zone').forEach(zone => {
+                zone.ondragover = allowDrop;
+                zone.ondrop = drop;
+            });
+        }
+
+        // Drag and Drop mechanika
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData("text", ev.target.id);
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const dataId = ev.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(dataId);
+            
+            // Ha közvetlenül egy drop-zone-ra vagy a pool-ra dobjuk
+            let target = ev.target;
+            while (target && !target.classList.contains('drop-zone') && target.id !== 'pool') {
+                target = target.parentElement;
+            }
+
+            if (target) {
+                target.appendChild(draggedElement);
+            }
+        }
+
+        // Ellenőrzés logika
+        function checkAnswers() {
+            let allCorrect = true;
+            const zones = document.querySelectorAll('.drop-zone');
+
+            // 1. Megnézzük, maradt-e elem a pool-ban
+            if (pool.children.length > 0) {
+                allCorrect = false;
+            } else {
+                // 2. Megnézzük, minden elem a jó helyen van-e
+                zones.forEach(zone => {
+                    const category = zone.getAttribute('data-category');
+                    const cards = zone.querySelectorAll('.draggable');
+                    
+                    cards.forEach(card => {
+                        if (card.getAttribute('data-answer') !== category) {
+                            allCorrect = false;
+                        }
+                    });
+
+                    // Ellenőrizzük, hogy a zónában annyi elem van-e, amennyinek lennie kell
+                    const expectedCount = data.filter(d => d.target === category).length;
+                    if (cards.length !== expectedCount) {
+                        allCorrect = false;
+                    }
+                });
+            }
+
+            if (allCorrect) {
+                resultMsg.innerText = "Sikerült!";
+                resultMsg.style.color = "green";
+            } else {
+                resultMsg.innerText = "Próbáld újra";
+                resultMsg.style.color = "red";
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
